@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package storage;
+
+option go_package = "./proto/storagepb";
+
+
+message KV {
+  string key = 1;
+  bytes  value = 2;
+}
+
+
+message MultiPutRequest {
+  repeated KV kvs = 1;
+}
+
+
+message MultiPutResponse {
+  bool ok = 1;
+}
+
+
+message MultiGetRequest {
+  repeated string keys = 1;
+}
+
+
+message MultiGetResponse {
+  map<string, bytes> values = 1;
+}
+
+
+service Storage {
+  rpc MultiPut(MultiPutRequest) returns (MultiPutResponse);
+  rpc MultiGet(MultiGetRequest) returns (MultiGetResponse);
+}
