@@ -8,8 +8,8 @@ type DataRecord struct {
 
 // CommitEntry links a key to its corresponding DataRecord's GSN.
 type CommitEntry struct {
-	Key     string
-	DataGSN uint64
+	Key string
+	Ref RecordRef
 }
 
 // CommitRecord represents a multi-key atomic transaction commit.
@@ -22,7 +22,7 @@ type CommitRecord struct {
 type SharedLog interface {
 	// AppendData appends a DATA record (key-value pair) to the shared log.
 	// Returns the assigned global sequence number (GSN).
-	AppendData(rec DataRecord) (gsn uint64, err error)
+	AppendData(rec DataRecord) (ref RecordRef, err error)
 
 	// AppendCommit appends a COMMIT record to the log,
 	// referencing multiple DataRecords via their GSNs.
@@ -30,7 +30,7 @@ type SharedLog interface {
 	AppendCommit(rec CommitRecord) (commitGSN uint64, err error)
 
 	// ReadData retrieves a DATA record by its GSN.
-	ReadData(gsn uint64) (DataRecord, error)
+	ReadData(ref RecordRef) (DataRecord, error)
 
 	// ReplayCommits replays COMMIT records in GSN order from [fromGSN, toGSN].
 	// The provided handler is called for each commit record.

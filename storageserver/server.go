@@ -30,14 +30,14 @@ func (s *StorageServer) MultiPut(ctx context.Context, req *storagepb.MultiPutReq
 			Value: kv.Value,
 		}
 
-		dataGSN, err := s.sharedLog.AppendData(dataRecord)
+		ref, err := s.sharedLog.AppendData(dataRecord)
 		if err != nil {
 			return nil, err
 		}
 
 		commitEntries = append(commitEntries, sharedlog.CommitEntry{
-			Key:     kv.Key,
-			DataGSN: dataGSN,
+			Key: kv.Key,
+			Ref: ref,
 		})
 	}
 
@@ -51,8 +51,8 @@ func (s *StorageServer) MultiPut(ctx context.Context, req *storagepb.MultiPutReq
 	msEntries := make([]mapservice.CommitEntry, 0, len(commitEntries))
 	for _, e := range commitEntries {
 		msEntries = append(msEntries, mapservice.CommitEntry{
-			Key:     e.Key,
-			DataGSN: e.DataGSN,
+			Key: e.Key,
+			Ref: e.Ref,
 		})
 	}
 	s.mapService.ApplyCommit(commitGSN, msEntries)
@@ -70,12 +70,12 @@ func (s *StorageServer) MultiGet(ctx context.Context, req *storagepb.MultiGetReq
 	}
 
 	for _, key := range req.Keys {
-		dataGSN, ok := offsets[key]
+		ref, ok := offsets[key]
 		if !ok {
 			continue
 		}
 
-		dataRec, err := s.sharedLog.ReadData(dataGSN)
+		dataRec, err := s.sharedLog.ReadData(ref)
 		if err != nil {
 			return nil, err
 		}

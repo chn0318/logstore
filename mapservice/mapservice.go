@@ -1,19 +1,23 @@
 package mapservice
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/chn0318/logstore/sharedlog"
+)
 
 // KeyMeta stores the latest data GSN and the commit GSN
 // that last updated this key.
 type KeyMeta struct {
-	DataGSN   uint64
+	Ref       sharedlog.RecordRef
 	CommitGSN uint64
 }
 
 // CommitEntry describes a single key->data_gsn pair inside a commit.
 // Coordinator 可以把 sharedlog.CommitEntry 转成这个类型传进来。
 type CommitEntry struct {
-	Key     string
-	DataGSN uint64
+	Key string
+	Ref sharedlog.RecordRef
 }
 
 // MapService is an in-memory implementation of the mapping service.
@@ -44,36 +48,24 @@ func (s *MapService) ApplyCommit(commitGSN uint64, entries []CommitEntry) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// 维护全局见过的最大 commitGSN
 	if commitGSN > s.maxCommitGSN {
 		s.maxCommitGSN = commitGSN
 	}
-
 	for _, e := range entries {
 		meta, ok := s.m[e.Key]
-		// 如果 key 还不存在，或者这是更晚的 commit，就更新
 		if !ok || commitGSN > meta.CommitGSN {
-			s.m[e.Key] = KeyMeta{
-				DataGSN:   e.DataGSN,
-				CommitGSN: commitGSN,
-			}
+			s.m[e.Key] = KeyMeta{Ref: e.Ref, CommitGSN: commitGSN}
 		}
-		// 否则：当前 key 已经被更大的 commit_gsn 更新过了，跳过这个 key
 	}
 }
 
-// GetOffsets returns the latest DataGSN for a batch of keys.
-//
-// 返回的这组 key->DataGSN 是在同一把读锁下读取的，
-// 等价于来自 MapService 的一个原子快照。
-func (s *MapService) GetOffsets(keys []string) map[string]uint64 {
+func (s *MapService) GetOffsets(keys []string) map[string]sharedlog.RecordRef {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-
-	res := make(map[string]uint64, len(keys))
+	res := make(map[string]sharedlog.RecordRef, len(keys))
 	for _, k := range keys {
 		if meta, ok := s.m[k]; ok {
-			res[k] = meta.DataGSN
+			res[k] = meta.Ref
 		}
 	}
 	return res

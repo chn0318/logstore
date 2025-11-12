@@ -21,12 +21,15 @@ func NewMemoryLog() *MemoryLog {
 	}
 }
 
-func (l *MemoryLog) AppendData(rec sharedlog.DataRecord) (uint64, error) {
+func (l *MemoryLog) AppendData(rec sharedlog.DataRecord) (sharedlog.RecordRef, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.tail++
 	l.dataRecs[l.tail] = rec
-	return l.tail, nil
+
+	return sharedlog.RecordRef{
+		GSN: l.tail,
+	}, nil
 }
 
 func (l *MemoryLog) AppendCommit(rec sharedlog.CommitRecord) (uint64, error) {
@@ -37,12 +40,12 @@ func (l *MemoryLog) AppendCommit(rec sharedlog.CommitRecord) (uint64, error) {
 	return l.tail, nil
 }
 
-func (l *MemoryLog) ReadData(gsn uint64) (sharedlog.DataRecord, error) {
+func (l *MemoryLog) ReadData(ref sharedlog.RecordRef) (sharedlog.DataRecord, error) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	rec, ok := l.dataRecs[gsn]
+	rec, ok := l.dataRecs[ref.GSN]
 	if !ok {
-		return sharedlog.DataRecord{}, fmt.Errorf("data record not found: gsn=%d", gsn)
+		return sharedlog.DataRecord{}, fmt.Errorf("data record not found: gsn=%d", ref.GSN)
 	}
 	return rec, nil
 }
