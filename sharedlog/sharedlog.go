@@ -32,13 +32,13 @@ type SharedLog interface {
 	// ReadData retrieves a DATA record by its GSN.
 	ReadData(ref RecordRef) (DataRecord, error)
 
-	// ReplayCommits replays COMMIT records in GSN order from [fromGSN, toGSN].
-	// The provided handler is called for each commit record.
-	ReplayCommits(fromGSN, toGSN uint64, handler func(commitGSN uint64, rec CommitRecord) error) error
+	// // ReplayCommits replays COMMIT records in GSN order from [fromGSN, toGSN].
+	// // The provided handler is called for each commit record.
+	// ReplayCommits(fromGSN, toGSN uint64, handler func(commitGSN uint64, rec CommitRecord) error) error
 
-	// Head returns the smallest GSN currently available (useful for log trimming).
-	Head() uint64
+	// // Head returns the smallest GSN currently available (useful for log trimming).
+	// Head() uint64
 
-	// Tail returns the largest GSN written so far.
-	Tail() uint64
+	// // Tail returns the largest GSN written so far.
+	// Tail() uint64
 }
