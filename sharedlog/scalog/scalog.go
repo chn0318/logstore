@@ -24,8 +24,7 @@ func NewScalogSystem() (*ScalogSystem, error) {
 	discAddr := address.NewGeneralDiscAddr(discIp, discPort)
 	dataPort := uint16(viper.GetInt("data-port"))
 	dataAddr := address.NewGeneralDataAddr("data-%v-%v-ip", numReplica, dataPort)
-	//ToDo: config numClient
-	numClients := 100
+	numClients := int(viper.GetInt("scalog-client-pool-size"))
 	if numClients <= 0 {
 		numClients = 4
 	}

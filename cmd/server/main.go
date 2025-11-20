@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	viper.SetConfigFile("/home/chn/logstore/.scalog.yaml")
+	viper.SetConfigFile("/home/chn/.scalog.yaml")
 	if err := viper.ReadInConfig(); err == nil {
 		log.Printf("Using config file: %v", viper.ConfigFileUsed())
 	}

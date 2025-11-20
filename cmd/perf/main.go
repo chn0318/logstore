@@ -17,7 +17,7 @@ import (
 
 func main() {
 	addr := flag.String("addr", "localhost:50051", "gRPC server address")
-	totalReq := flag.Int("total-requests", 10000, "total number of MultiPut requests")
+	totalReq := flag.Int("total-requests", 500000, "total number of MultiPut requests")
 	concurrency := flag.Int("concurrency", 32, "number of concurrent workers")
 	keysPerReq := flag.Int("keys-per-req", 10, "number of keys per MultiPut request")
 	valueSize := flag.Int("value-bytes", 4*1024, "value size in bytes")
@@ -68,26 +68,28 @@ func main() {
 			defer wg.Done()
 
 			for j := range jobs {
-				// 每个请求使用一个 context，也可以不设超时
-				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-				// 注意：高压测可以改成 context.Background()
-				defer cancel()
-
-				// 构造本次 MultiPut 的 key 列表
+				ctx := context.Background()
 				kvs := make([]*storagepb.KV, 0, *keysPerReq)
 				for i := 0; i < *keysPerReq; i++ {
-					// key 做到“基本唯一”，避免太多冲突（其实冲突也没关系，只是更贴近真实负载）
-					key := fmt.Sprintf("k-worker-%d-req-%d-key-%d", workerID, j.id, i)
-					kvs = append(kvs, &storagepb.KV{
-						Key:   key,
-						Value: value,
-					})
+					kvs := make([]*storagepb.KV, 0, *keysPerReq)
+					for i := 0; i < *keysPerReq; i++ {
+						keyID := (uint64(workerID) << 48) |
+							(uint64(j.id) << 16) |
+							uint64(i)
+
+						key := fmt.Sprintf("%016x", keyID)
+						kvs = append(kvs, &storagepb.KV{
+							Key:   key,
+							Value: value,
+						})
+					}
 				}
 
 				_, err := client.MultiPut(ctx, &storagepb.MultiPutRequest{
 					Kvs: kvs,
 				})
 				if err != nil {
+					fmt.Printf("err: %v\n", err)
 					mu.Lock()
 					errCount++
 					mu.Unlock()
